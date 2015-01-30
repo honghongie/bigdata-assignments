@@ -1,0 +1,4 @@
+edu/umd/honghongie/App.class
+edu/umd/honghongie/DemoWordCount.class
+edu/umd/honghongie/DemoWordCount$MyMapper.class
+edu/umd/honghongie/DemoWordCount$MyReducer.class
