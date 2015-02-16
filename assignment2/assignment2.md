@@ -89,6 +89,12 @@ Question 9. What's the pair (x, y) with the highest PMI? Write a sentence or two
 Question 10. What are the three words that have the highest PMI with "cloud" and "love"? And what are the PMI values?
 ####
 ```
-the max words relates to love is: --1: love,madly : -3.048442 --2: Love,Dangerously : -3.0819545 --3:Oliver!,Love : -3.0865023
-for problem 5: the max words relates to cloud is: --1: Cloud,Magellanic : -2.3422582 --2: cloud,nebula. : -2.5360992 --3:thunderstorm,cloud : -2.788875
+the max words relates to love is: 
+--1: love,madly : -3.048442 
+--2: Love,Dangerously : -3.0819545 
+--3:Oliver!,Love : -3.0865023
+the max words relates to cloud is: 
+--1: Cloud,Magellanic : -2.3422582 
+--2: cloud,nebula. : -2.5360992 
+--3:thunderstorm,cloud : -2.788875
 ```
