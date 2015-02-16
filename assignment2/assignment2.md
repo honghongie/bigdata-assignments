@@ -75,9 +75,20 @@ Question 7. Now disable all combiners. What is the running time of the complete 
 ####
 Question 8. How many distinct PMI pairs did you extract?
 ####
+```
+38210424
+
+```
 ####
 Question 9. What's the pair (x, y) with the highest PMI? Write a sentence or two to explain what it is and why it has such a high PMI.
 ####
+```
+((120 hp),88 kW) : -1.0
+```
 ####
 Question 10. What are the three words that have the highest PMI with "cloud" and "love"? And what are the PMI values?
 ####
+```
+the max words relates to love is: --1: love,madly : -3.048442 --2: Love,Dangerously : -3.0819545 --3:Oliver!,Love : -3.0865023
+for problem 5: the max words relates to cloud is: --1: Cloud,Magellanic : -2.3422582 --2: cloud,nebula. : -2.5360992 --3:thunderstorm,cloud : -2.788875
+```
