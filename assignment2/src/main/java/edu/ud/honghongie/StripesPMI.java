@@ -27,6 +27,7 @@ import java.net.URI;
 import java.io.File;
  
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -253,24 +254,27 @@ public class StripesPMI extends Configured implements Tool {
           {
             String t1=kandv[0];
             String t2=kandv[1];
-            float v=Float.parseFloat(t2);
- //         System.out.println(t1);
- //         System.out.println(t2);
- //         System.out.println(v);
+            if (NumberUtils.isNumber(t2)){ //incase there will be abnormal characters
+              float v=Float.parseFloat(t2);
   
-            if (v>9)
-            {
-              leftwordcnt=singlewordmap.get(key.toString());
-              rightwordcnt=singlewordmap.get(t1);
- //           System.out.println(leftwordcnt);
- //           System.out.println(rightwordcnt);
-              float respmi=(float)Math.log10(1.0*v/(leftwordcnt*rightwordcnt));
- //           System.out.println(respmi);
- //           System.out.println(key.toString()+"and"+t1);
+             if (v>9)
+              {
+                if (singlewordmap.containsKey(key.toString()))
+                  leftwordcnt=singlewordmap.get(key.toString());
+                if (singlewordmap.containsKey(t1))
+                  rightwordcnt=singlewordmap.get(t1);
+                if (leftwordcnt*rightwordcnt==0)
+                  System.out.println("one word may not be there");
+ //               System.out.println(leftwordcnt);
+ //               System.out.println(rightwordcnt);
+                  float respmi=(float)Math.log10(1.0*v/(leftwordcnt*rightwordcnt));
+ //               System.out.println(respmi);
+ //               System.out.println(key.toString()+"and"+t1);
 
-              PAIR.set(key.toString(),t1);
-              VALUE.set(respmi);
-              context.write(PAIR,VALUE);
+                PAIR.set(key.toString(),t1);
+                VALUE.set(respmi);
+                context.write(PAIR,VALUE);
+             }
             }
           }
       }
