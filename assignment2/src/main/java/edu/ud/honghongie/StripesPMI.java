@@ -232,52 +232,29 @@ public class StripesPMI extends Configured implements Tool {
       {
         map.plus(iter.next());
       }
-
-      String ss= map.toString();
- //     System.out.println(ss);
- //     System.out.println(key.toString());
-      String subss = ss.substring(1,ss.length()-1); //get rid of {}
-      String[] kvpairs=subss.split("\\,");
-      String kv="";
       float leftwordcnt=0;
       float rightwordcnt=0;
 
- //     System.out.println("code 2******************"+kvpairs.length);
-      int len=kvpairs.length;
-      for (int i=0;i<len;i++)
+      Iterator itervalue = map.keySet().iterator();
+      while(itervalue.hasNext())
       {
- //         System.out.println("code 3*******************");
-          kv=kvpairs[i].trim();
- //         System.out.println(kv);
-          String[] kandv=kv.split("\\="); //out of index; use if to see what is the problem
-          if (kandv.length==2)
-          {
-            String t1=kandv[0];
-            String t2=kandv[1];
-            if (NumberUtils.isNumber(t2)){ //incase there will be abnormal characters
-              float v=Float.parseFloat(t2);
-  
-             if (v>9)
-              {
-                if (singlewordmap.containsKey(key.toString()))
-                  leftwordcnt=singlewordmap.get(key.toString());
-                if (singlewordmap.containsKey(t1))
-                  rightwordcnt=singlewordmap.get(t1);
-                if (leftwordcnt*rightwordcnt==0)
-                  System.out.println("one word may not be there");
- //               System.out.println(leftwordcnt);
- //               System.out.println(rightwordcnt);
-                  float respmi=(float)Math.log10(1.0*v/(leftwordcnt*rightwordcnt));
- //               System.out.println(respmi);
- //               System.out.println(key.toString()+"and"+t1);
+        String tt=(String)itervalue.next();
+        int cv=map.get(tt);
+        if (cv>9) //ten or more
+        {
+          if (singlewordmap.containsKey(key.toString()))
+            leftwordcnt=singlewordmap.get(key.toString());
+          if (singlewordmap.containsKey(tt))
+            rightwordcnt=singlewordmap.get(tt);
+          if (leftwordcnt*rightwordcnt==0)
+            System.out.println("one word may not be there");
+          float respmi=(float)Math.log10(1.0*cv/(leftwordcnt*rightwordcnt));
+          PAIR.set(key.toString(),tt);
+          VALUE.set(respmi);
+          context.write(PAIR,VALUE);
+        }
 
-                PAIR.set(key.toString(),t1);
-                VALUE.set(respmi);
-                context.write(PAIR,VALUE);
-             }
-            }
-          }
-      }
+      }      
     }
   }
 
