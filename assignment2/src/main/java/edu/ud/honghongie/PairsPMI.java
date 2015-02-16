@@ -312,7 +312,7 @@ public class PairsPMI extends Configured implements Tool {
     job1.setJobName(PairsPMI.class.getSimpleName());
     job1.setJarByClass(PairsPMI.class);
 
-    job1.setNumReduceTasks(reduceTasks);
+    job1.setNumReduceTasks(1);
     
 
     //file path of job1  

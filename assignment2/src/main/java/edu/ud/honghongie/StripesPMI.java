@@ -235,7 +235,7 @@ public class StripesPMI extends Configured implements Tool {
       String ss= map.toString();
  //     System.out.println(ss);
  //     System.out.println(key.toString());
-      String subss = ss.substring(1,ss.length()-1);
+      String subss = ss.substring(1,ss.length()-1); //get rid of {}
       String[] kvpairs=subss.split("\\,");
       String kv="";
       float leftwordcnt=0;
@@ -249,7 +249,7 @@ public class StripesPMI extends Configured implements Tool {
           kv=kvpairs[i].trim();
  //         System.out.println(kv);
           String[] kandv=kv.split("\\="); //out of index; use if to see what is the problem
-          if (kandv.length>1)
+          if (kandv.length==2)
           {
             String t1=kandv[0];
             String t2=kandv[1];
@@ -346,7 +346,7 @@ public class StripesPMI extends Configured implements Tool {
     job1.setJobName(StripesPMI.class.getSimpleName());
     job1.setJarByClass(StripesPMI.class);
 
-    job1.setNumReduceTasks(reduceTasks);
+    job1.setNumReduceTasks(1);
     
 
     //file path of job1  
