@@ -65,13 +65,17 @@ the max words relates to cloud is:
 ####
 Question 6. What is the running time of the complete pairs implementation? What is the running time of the complete stripes implementation? (Did you run this in your VM or on the UMIACS cluster? Either is fine, but tell me which one.)
 ####
+```
 Run on the UMIACS cluster.
-Pairs Implementation:
-Stripes Implementation: 2743.638 seconds
-
+Pairs Implementation: Approximate 6 hours, because the network is out, so don't know the accurate running time.
+Stripes Implementation: 2567.948 seconds
+```
 ####
 Question 7. Now disable all combiners. What is the running time of the complete pairs implementation now? What is the running time of the complete stripes implementation? (Did you run this in your VM or on the UMIACS cluster? Either is fine, but tell me which one.)
 ####
+```
+
+```
 ####
 Question 8. How many distinct PMI pairs did you extract?
 ####
