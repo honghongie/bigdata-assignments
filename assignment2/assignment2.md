@@ -91,7 +91,8 @@ Question 8. How many distinct PMI pairs did you extract?
 Question 9. What's the pair (x, y) with the highest PMI? Write a sentence or two to explain what it is and why it has such a high PMI.
 ####
 ```
-((120 hp),88 kW) : -1.0
+((120 hp),88 kW) : -1.0, thought they are processed as two words but we always use them together,
+none of the element is used separately, so the PMI is -1.0.
 ```
 ####
 Question 10. What are the three words that have the highest PMI with "cloud" and "love"? And what are the PMI values?
