@@ -42,7 +42,7 @@ if they are treated as one pair then distinct pairs is 116759.
 Question 4. What's the pair (x, y) with the highest PMI? Write a sentence or two to explain what it is and why it has such a high PMI.
 ####
 ```
-Highest pair is (meshach, shadrach) : -1.146128. High PMI means they usually appear 
+Highest pair is (meshach, shadrach) : 4.047594. High PMI means they usually appear 
 together in a line. As wikipedia says Shadrach, Meshach, and Abednego are biblical 
 characters in the book of Daniel chapters 1–3. They are depicted as being saved by
 divine intervention from the Babylonian execution of being burned alive in a fiery furnace.
@@ -53,13 +53,13 @@ Question 5. What are the three words that have the highest PMI with "cloud" and 
 ```
 Except duplicate pairs,
 the max words relates to love is: 
---1: hate,love : -4.075182 
---2: love,hermia : -4.312543 
---3:loved,love : -4.4553933
+--1: hate,love : 1.118541 
+--2: love,hermia : 0.738329
+--3:loved,love : 0.738329
 the max words relates to cloud is: 
---1: cloud,tabernacle : -3.390087 
---2: night,cloud : -4.0125 
---3:came,cloud : -4.246474
+--1: cloud,tabernacle : 1.803636
+--2: night,cloud : 1.181223
+--3:came,cloud : 0.947248
 ```
 
 ####
@@ -67,8 +67,7 @@ Question 6. What is the running time of the complete pairs implementation? What 
 ####
 ```
 Run on the UMIACS cluster.
-Pairs Implementation: Approximate 5 hours, because the network is out, 
-so don't know the accurate running time.
+Pairs Implementation: approximate 5 hours
 Stripes Implementation: 2567.948 seconds
 ```
 ####
@@ -91,19 +90,19 @@ Question 8. How many distinct PMI pairs did you extract?
 Question 9. What's the pair (x, y) with the highest PMI? Write a sentence or two to explain what it is and why it has such a high PMI.
 ####
 ```
-((120 hp),88 kW) : -1.0, thought they are processed as two words but we always use them together,
-none of the element is used separately, so the PMI is -1.0.
+((120 hp),88 kW) : 4.060180, thought they are processed as two words but we always use them together,
+none of the element is used separately, so the PMI is -1.0+log(n)=-1.0+log(114863)=4.060180.
 ```
 ####
 Question 10. What are the three words that have the highest PMI with "cloud" and "love"? And what are the PMI values?
 ####
 ```
 the max words relates to love is: 
---1: love,madly : -3.048442 
---2: Love,Dangerously : -3.0819545 
---3:Oliver!,Love : -3.0865023
+--1: love,madly : 2.011738
+--2: Love,Dangerously : 1.978225
+--3:Oliver!,Love : 1.973678
 the max words relates to cloud is: 
---1: Cloud,Magellanic : -2.3422582 
---2: cloud,nebula. : -2.5360992 
---3:thunderstorm,cloud : -2.788875
+--1: Cloud,Magellanic : 2.717922 
+--2: cloud,nebula. : 2.524081
+--3:thunderstorm,cloud : 2.271305
 ```
