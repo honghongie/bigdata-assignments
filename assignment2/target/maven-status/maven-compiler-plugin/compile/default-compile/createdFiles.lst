@@ -5,6 +5,7 @@ edu/umd/honghongie/PairsPMI$MyCombiner.class
 edu/umd/honghongie/StripesPMI$Map_First.class
 edu/umd/honghongie/StripesPMI$Map_Second.class
 edu/umd/honghongie/StripesPMI$Reduce_First.class
+edu/umd/honghongie/PairsPMI$MyCombiner_Second.class
 edu/umd/honghongie/StripesPMI.class
 edu/umd/honghongie/StripesPMI$Reduce_Second.class
 edu/umd/honghongie/PairsPMI$Map_First.class

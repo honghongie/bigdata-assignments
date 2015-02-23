@@ -67,6 +67,7 @@ import tl.lin.data.pair.PairOfStrings;
  */
 public class PairsPMI extends Configured implements Tool {
   private static final Logger LOG = Logger.getLogger(PairsPMI.class);
+  private static int lines = 0;
 
   private static class Map_First extends Mapper<LongWritable, Text, Text, IntWritable> {
     private static final Text WORD = new Text();
@@ -77,6 +78,7 @@ public class PairsPMI extends Configured implements Tool {
         throws IOException, InterruptedException 
     {
       String line = value.toString();
+      lines = lines + 1;
       String[] terms = line.split("\\s+");
       //get unique set of the line
       ArrayList<String> list = new ArrayList<String>();
@@ -181,6 +183,22 @@ public class PairsPMI extends Configured implements Tool {
     }
   }
 
+  protected static class MyCombiner_Second extends
+      Reducer<PairOfStrings, FloatWritable, PairOfStrings, FloatWritable> {
+    private static final FloatWritable SUM = new FloatWritable();
+
+    @Override
+    public void reduce(PairOfStrings key, Iterable<FloatWritable> values, Context context)
+        throws IOException, InterruptedException {
+      float sum = 0;
+      Iterator<FloatWritable> iter = values.iterator();
+      while (iter.hasNext()) {
+        sum += iter.next().get();
+      }
+      SUM.set(sum);
+      context.write(key, SUM);
+    }
+  }
 
   protected static class Reduce_Second extends
       Reducer<PairOfStrings, FloatWritable, PairOfStrings, FloatWritable> {
@@ -236,7 +254,7 @@ public class PairsPMI extends Configured implements Tool {
           System.out.println("one word may not be there");
       if (sum>9)
       {
-        float respmi=(float)Math.log10(1.0*sum/(leftwordcnt*rightwordcnt));
+        float respmi=(float)Math.log10(1.0*sum/(leftwordcnt*rightwordcnt))+(float)Math.log10(lines);
         VALUE.set(respmi);
         context.write(key, VALUE);
       }
@@ -312,7 +330,7 @@ public class PairsPMI extends Configured implements Tool {
     job1.setJobName(PairsPMI.class.getSimpleName());
     job1.setJarByClass(PairsPMI.class);
 
-    job1.setNumReduceTasks(1);
+    job1.setNumReduceTasks(1); //ensure go to one file
     
 
     //file path of job1  
@@ -339,7 +357,7 @@ public class PairsPMI extends Configured implements Tool {
     
     long startTime1 = System.currentTimeMillis();
     job1.waitForCompletion(true);
-    System.out.println("Job Finished in " + (System.currentTimeMillis() - startTime1) / 1000.0 + " seconds");
+    System.out.println("First Job Finished in " + (System.currentTimeMillis() - startTime1) / 1000.0 + " seconds");
 
     //begin job2
     //Configuration conf2 = getConf();
@@ -359,6 +377,7 @@ public class PairsPMI extends Configured implements Tool {
     job2.addCacheFile(new URI("temp/part-r-00000"));     
 
     job2.setMapperClass(Map_Second.class);
+    job2.setCombinerClass(MyCombiner_Second.class);
     job2.setReducerClass(Reduce_Second.class);
 
     job2.setMapOutputKeyClass(PairOfStrings.class);//map output key   
@@ -370,7 +389,9 @@ public class PairsPMI extends Configured implements Tool {
 
     long startTime2 = System.currentTimeMillis();
     job2.waitForCompletion(true);
-    System.out.println("Job Finished in " + (System.currentTimeMillis() - startTime2) / 1000.0 + " seconds");
+    System.out.println("Second Job Finished in " + (System.currentTimeMillis() - startTime2) / 1000.0 + " seconds");
+    System.out.println("Total Job Finished in " + (System.currentTimeMillis() - startTime1) / 1000.0 + " seconds");
+    System.out.println("Total number of lines:" + lines);
     return 0;
   }
 

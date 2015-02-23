@@ -69,6 +69,7 @@ import tl.lin.data.pair.PairOfStrings;
  */
 public class StripesPMI extends Configured implements Tool {
   private static final Logger LOG = Logger.getLogger(StripesPMI.class);
+  private static int lines = 0;
 
   private static class Map_First extends Mapper<LongWritable, Text, Text, IntWritable> {
     private static final Text WORD = new Text();
@@ -79,6 +80,7 @@ public class StripesPMI extends Configured implements Tool {
         throws IOException, InterruptedException 
     {
       String line = value.toString();
+      lines = lines + 1;
       String[] terms = line.split("\\s+");
       //get unique set of the line
       ArrayList<String> list = new ArrayList<String>();
@@ -248,7 +250,7 @@ public class StripesPMI extends Configured implements Tool {
             rightwordcnt=singlewordmap.get(tt);
           if (leftwordcnt*rightwordcnt==0)
             System.out.println("one word may not be there");
-          float respmi=(float)Math.log10(1.0*cv/(leftwordcnt*rightwordcnt));
+          float respmi=(float)Math.log10(1.0*cv/(leftwordcnt*rightwordcnt))+(float)Math.log10(lines);
           PAIR.set(key.toString(),tt);
           VALUE.set(respmi);
           context.write(PAIR,VALUE);
@@ -386,6 +388,8 @@ public class StripesPMI extends Configured implements Tool {
     long startTime2 = System.currentTimeMillis();
     job2.waitForCompletion(true);
     System.out.println("Job Finished in " + (System.currentTimeMillis() - startTime2) / 1000.0 + " seconds");
+    System.out.println("Total Job Finished in" + (System.currentTimeMillis() - startTime1) / 1000.0 + " seconds");
+    System.out.println("total number of lines:" + lines);
     return 0;
   }
 
