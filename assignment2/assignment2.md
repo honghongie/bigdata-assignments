@@ -67,7 +67,7 @@ Question 6. What is the running time of the complete pairs implementation? What 
 ####
 ```
 Run on the UMIACS cluster.
-Pairs Implementation: approximate 5 hours
+Pairs Implementation: 25138.663 seconds
 Stripes Implementation: 2567.948 seconds
 ```
 ####
