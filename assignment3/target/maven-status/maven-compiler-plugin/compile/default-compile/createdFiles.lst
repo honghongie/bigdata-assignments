@@ -1,0 +1,8 @@
+edu/umd/honghongie/BuildInvertedIndexCompressed$MyMapper.class
+edu/umd/honghongie/BooleanRetrievalCompressed.class
+edu/umd/honghongie/BuildInvertedIndexCompressed$MyPartitioner.class
+edu/umd/honghongie/BuildInvertedIndexCompressed.class
+edu/umd/honghongie/LookupPostings.class
+edu/umd/honghongie/BuildInvertedIndexCompressed$MyCombiner.class
+edu/umd/honghongie/App.class
+edu/umd/honghongie/BuildInvertedIndexCompressed$MyReducer.class

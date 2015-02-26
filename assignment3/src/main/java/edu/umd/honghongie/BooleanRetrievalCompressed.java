@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package edu.umd.cloud9.example.ir;
+package edu.umd.honghongie;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,6 +37,8 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.VIntWritable;
+import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.util.Tool;
@@ -46,16 +48,16 @@ import tl.lin.data.array.ArrayListWritable;
 import tl.lin.data.pair.PairOfInts;
 import tl.lin.data.pair.PairOfWritables;
 
-public class BooleanRetrieval extends Configured implements Tool {
+public class BooleanRetrievalCompressed extends Configured implements Tool {
   private MapFile.Reader index;
   private FSDataInputStream collection;
   private Stack<Set<Integer>> stack;
 
-  private BooleanRetrieval() {}
+  private BooleanRetrievalCompressed() {}
 
   private void initialize(String indexPath, String collectionPath, FileSystem fs) throws IOException {
-    index = new MapFile.Reader(new Path(indexPath + "/part-r-00000"), fs.getConf());
-    collection = fs.open(new Path(collectionPath));
+    index = new MapFile.Reader(new Path(indexPath + "/part-r-00000"), fs.getConf()); //where index is
+    collection = fs.open(new Path(collectionPath));         //where the text is
     stack = new Stack<Set<Integer>>();
   }
 
@@ -116,32 +118,45 @@ public class BooleanRetrieval extends Configured implements Tool {
     stack.push(sn);
   }
 
+//get docid set of the term
   private Set<Integer> fetchDocumentSet(String term) throws IOException {
     Set<Integer> set = new TreeSet<Integer>();
 
-    for (PairOfInts pair : fetchPostings(term)) {
-      set.add(pair.getLeftElement());
+    ArrayListWritable<VIntWritable> postings = fetchPostings(term);
+    int gap = 0;
+
+    for (int i=0; i< postings.size();i=i+2) {
+      VIntWritable docnum = postings.get(i);
+      int docid = docnum.get() + gap; //convert vintwritable to int
+      set.add(docid);
+      gap = docid; //update gap to previous docid
     }
 
     return set;
   }
 
-  private ArrayListWritable<PairOfInts> fetchPostings(String term) throws IOException {
+//fetch postings of term
+  private ArrayListWritable<VIntWritable> fetchPostings(String term) throws IOException {
     Text key = new Text();
-    PairOfWritables<IntWritable, ArrayListWritable<PairOfInts>> value =
-        new PairOfWritables<IntWritable, ArrayListWritable<PairOfInts>>();
+    PairOfWritables<IntWritable, ArrayListWritable<VIntWritable>> value =
+        new PairOfWritables<IntWritable, ArrayListWritable<VIntWritable>>();
 
     key.set(term);
     index.get(key, value);
 
-    return value.getRightElement();
+    return value.getRightElement();  //get the arraylistwritable (docid tf)
   }
 
+//get line of the term； only fetch first 80 
   private String fetchLine(long offset) throws IOException {
     collection.seek(offset);
     BufferedReader reader = new BufferedReader(new InputStreamReader(collection));
-
-    return reader.readLine();
+    String content = reader.readLine();
+    if (content.length()<82){
+      return content;
+    }else{
+      return content.substring(0,80).trim();
+    }
   }
 
   private static final String INDEX = "index";
@@ -207,6 +222,6 @@ public class BooleanRetrieval extends Configured implements Tool {
    * Dispatches command-line arguments to the tool via the {@code ToolRunner}.
    */
   public static void main(String[] args) throws Exception {
-    ToolRunner.run(new BooleanRetrieval(), args);
+    ToolRunner.run(new BooleanRetrievalCompressed(), args);
   }
 }

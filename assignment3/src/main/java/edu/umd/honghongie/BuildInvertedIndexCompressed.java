@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package edu.umd.cloud9.example.ir;
+package edu.umd.honghongie;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -34,12 +34,15 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.VIntWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MapFileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Logger;
@@ -48,15 +51,15 @@ import tl.lin.data.array.ArrayListWritable;
 import tl.lin.data.fd.Object2IntFrequencyDistribution;
 import tl.lin.data.fd.Object2IntFrequencyDistributionEntry;
 import tl.lin.data.pair.PairOfInts;
-import tl.lin.data.pair.PairOfObjectInt;
 import tl.lin.data.pair.PairOfWritables;
+import tl.lin.data.pair.PairOfStringLong;
 
 public class BuildInvertedIndexCompressed extends Configured implements Tool {
-  private static final Logger LOG = Logger.getLogger(BuildInvertedIndex.class);
-  //use key pairofobjects<VIntWritable，VIntWritable> and value VIntWritable
-  private static class MyMapper extends Mapper<LongWritable, Text, PairOfObjects<VIntWritable, VIntWritable>, VIntWritable> {
-    private static final PairOfObjects<VIntWritable, VIntWritable> PAIR= new PairOfObjects();
-    private static final VIntWritable VALUE = new VIntWritable(1);
+  private static final Logger LOG = Logger.getLogger(BuildInvertedIndexCompressed.class);
+
+  private static class MyMapper extends Mapper<LongWritable, Text, PairOfStringLong, IntWritable> {
+    private static final PairOfStringLong PAIR= new PairOfStringLong(); //Whether docid can be saved in Intwritable?
+    private static final IntWritable VALUE = new IntWritable(1);
 
     @Override
     public void map(LongWritable docno, Text doc, Context context)
@@ -70,25 +73,30 @@ public class BuildInvertedIndexCompressed extends Configured implements Tool {
         if (term == null || term.length() == 0) {
           continue;
         }
-        PAIR.set(term, docno.get());
+        long docid = docno.get();
+        PAIR.set(term, docid);
         context.write(PAIR, VALUE);
-        //special pairs also emit(term,*)
-        PAIR.set(term, "*");
-        context.write(PAIR, VALUE);
+
+        //special pairs also emit(term,*) //
+      //  PAIR.set(term, "*");
+      //  context.write(PAIR, VALUE);
+      //  System.out.println(PAIR);
+      //  System.out.println(VALUE);
 
       }
     }
   }
 
+
   protected static class MyCombiner extends
-      Reducer<PairOfObjects<VIntWritable, VIntWritable>, VIntWritable, PairOfObjects<VIntWritable, VIntWritable>, VIntWritable> {
-    private static final VIntWritable SUM = new VIntWritable();
+      Reducer<PairOfStringLong, IntWritable, PairOfStringLong, IntWritable> {
+    private static final IntWritable SUM = new IntWritable();
 
     @Override
-    public void reduce(PairOfObjects<VIntWritable, VIntWritable> key, Iterable<VIntWritable> values, Context context)
+    public void reduce(PairOfStringLong key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
       int sum = 0;
-      Iterator<VIntWritable> iter = values.iterator();
+      Iterator<IntWritable> iter = values.iterator();
       while (iter.hasNext()) {
         sum += iter.next().get();
       }
@@ -98,55 +106,92 @@ public class BuildInvertedIndexCompressed extends Configured implements Tool {
   }
 
   private static class MyReducer extends
-      Reducer<PairOfObjects<VIntWritable, VIntWritable>, VIntWritable, Text, PairOfWritables<VIntWritable, ArrayListWritable<PairOfInts>>> {
-    private final static VIntWritable DF = new VIntWritable();
-    Text tprev = new Text();
-    ArrayListWritable<PairOfInts> postings = new ArrayListWritable<PairOfInts>();
+      Reducer<PairOfStringLong, IntWritable, Text, PairOfWritables<IntWritable, ArrayListWritable<VIntWritable>>> {
+    private final static IntWritable DF = new IntWritable();
+    private final static Text WORD = new Text();
+    //
+    String tprev = null;
+    ArrayListWritable<VIntWritable> postings = new ArrayListWritable<VIntWritable>();
+    Long gap = 0L; 
+
+//Initialize using setup?
+//    @Override
+//    protected void setup(Context context)throws IOException, InterruptedException{
+//      String tprev = new String();
+//      ArrayListWritable<VIntWritable> postings = new ArrayListWritable<VIntWritable>();
+//    }
+//
 
     @Override
-    public void reduce(PairOfObjects<VIntWritable, VIntWritable> key, Iterable<VIntWritable> values, Context context)
+    public void reduce(PairOfStringLong key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
-      Iterator<PairOfInts> iter = values.iterator();
+      Iterator<IntWritable> iter = values.iterator();
       // get sum of all values
       int sum = 0;
       while (iter.hasNext()) {
-        sum += iter.next.get();
+        sum += iter.next().get();
       }
-      // wirte out DF and (docid,frequency) pairs
-    
-      if (tprev==null && key.getRightElement()=="*"){ //Initialize the first DF; make sure first pair is (word,*) only for the first pair
-        DF.set(sum);
-        tprev = term;
-      }else{
-        VIntWritable term = kye.getLeftElement();
-        if (term!=tpre && tprev!=null){ //get to a new term and previous one is not null; first pair is (word,*)
-          context.write(key,
-            new PairOfWritables<IntWritable, ArrayListWritable<PairOfInts>>(DF, postings));
-          if (key.getRightElement()=="*"){
-            DF.set(sum);
-            tprev = term;
-          }
-        }else{
-          int docid = key.getRightElement();
-          int tf = sum;
-          postings.add(docid,tf);
-          tprev = term;
-        }
-      }
-    }
-    //reduce method close how to write to context?
-    //how to emit last postings?
+      //ensure ascending, if use string, will becomes descending
+//      System.out.println("==============key:"+key);
+//      System.out.println("==============value:"+sum);
+      
+      // wirte out DF and (docid,frequency) pairs   
+      VIntWritable docid = new VIntWritable();
+      VIntWritable tf = new VIntWritable();
+   
+      String term = key.getLeftElement();
 
+//      if (!term.equals(tprev))System.out.println("term not equal to tprev");
+//      if (tprev!= null)System.out.println("tprev not null");
+
+      if (!term.equals(tprev) && tprev!=null){ //get to a new term and previous one is not null; first pair is (word,*)
+        WORD.set(tprev);
+        DF.set(postings.size()/2);
+//        System.out.println("*************DF:"+DF);
+
+        context.write(WORD,
+          new PairOfWritables<IntWritable, ArrayListWritable<VIntWritable>>(DF, postings));
+//        System.out.println("**************WORD:"+WORD);
+//        System.out.println("**************postings:"+postings);
+        postings.clear();
+        gap = 0L; //clear gap of previous list
+      }
+      // no matter whether new key, emit the information
+      long docnum = key.getRightElement();
+      long docnoc = docnum - gap;
+      //convert to int so that can be converted to VInt
+      String sdocnoc = Long.toString(docnoc);
+      int i = Integer.parseInt(sdocnoc);
+
+      docid.set(i);
+      tf.set(sum);
+      postings.add(docid);
+      postings.add(tf);
+      tprev = term;
+      gap = docnum;
+//      System.out.println("*****************"+tprev);
+//      System.out.println("docid: "+docid);
+
+    }
+  
+//emit last posting-----leave this alone to see whether it works 2.25
+     @Override
+    protected void cleanup(Context context)throws IOException, InterruptedException{
+      WORD.set(tprev);
+      context.write(WORD,
+        new PairOfWritables<IntWritable, ArrayListWritable<VIntWritable>>(DF, postings));
+    }
   }
 
-  protected static class MyPartitioner extends Partitioner<PairOfStrings, FloatWritable> {
+//partitioner according to indexed word
+  protected static class MyPartitioner extends Partitioner<PairOfStringLong, IntWritable> {
     @Override
-    public int getPartition(PairOfStrings key, FloatWritable value, int numReduceTasks) {
+    public int getPartition(PairOfStringLong key, IntWritable value, int numReduceTasks) {
       return (key.getLeftElement().hashCode() & Integer.MAX_VALUE) % numReduceTasks;
     }
   }
 
-  private BuildInvertedIndex() {}
+  private BuildInvertedIndexCompressed() {}
 
   private static final String INPUT = "input";
   private static final String OUTPUT = "output";
@@ -190,28 +235,31 @@ public class BuildInvertedIndexCompressed extends Configured implements Tool {
     int reduceTasks = cmdline.hasOption(NUM_REDUCERS) ?
         Integer.parseInt(cmdline.getOptionValue(NUM_REDUCERS)) : 1;
 
-    LOG.info("Tool name: " + BuildInvertedIndex.class.getSimpleName());
+    LOG.info("Tool name: " + BuildInvertedIndexCompressed.class.getSimpleName());
     LOG.info(" - input path: " + inputPath);
     LOG.info(" - output path: " + outputPath);
     LOG.info(" - num reducers: " + reduceTasks);
 
     Job job = Job.getInstance(getConf());
-    job.setJobName(BuildInvertedIndex.class.getSimpleName());
-    job.setJarByClass(BuildInvertedIndex.class);
+    job.setJobName(BuildInvertedIndexCompressed.class.getSimpleName());
+    job.setJarByClass(BuildInvertedIndexCompressed.class);
 
     job.setNumReduceTasks(reduceTasks);
 
     FileInputFormat.setInputPaths(job, new Path(inputPath));
     FileOutputFormat.setOutputPath(job, new Path(outputPath));
 
-    job.setMapOutputKeyClass(Text.class);
-    job.setMapOutputValueClass(PairOfInts.class);
+    job.setMapOutputKeyClass(PairOfStringLong.class);
+    job.setMapOutputValueClass(IntWritable.class);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(PairOfWritables.class);
-    job.setOutputFormatClass(MapFileOutputFormat.class);
+    job.setOutputFormatClass(MapFileOutputFormat.class); //why mapfileoutputformat?
+//    job.setOutputFormatClass(SequenceFileOutputFormat);
 
     job.setMapperClass(MyMapper.class);
+    job.setCombinerClass(MyCombiner.class);
     job.setReducerClass(MyReducer.class);
+    job.setPartitionerClass(MyPartitioner.class);
 
     // Delete the output directory if it exists already.
     Path outputDir = new Path(outputPath);
@@ -228,6 +276,6 @@ public class BuildInvertedIndexCompressed extends Configured implements Tool {
    * Dispatches command-line arguments to the tool via the {@code ToolRunner}.
    */
   public static void main(String[] args) throws Exception {
-    ToolRunner.run(new BuildInvertedIndex(), args);
+    ToolRunner.run(new BuildInvertedIndexCompressed(), args);
   }
 }
