@@ -3,6 +3,8 @@ tell me if you were able to successfully complete the assignment
 ####
 ```
 successfully complete the assignment
+ExtractTopPersonalizedPageRankNodes will print out results with log information,
+it also output results to files in separate directories named TestOutPut*
 ```
 
 ####
