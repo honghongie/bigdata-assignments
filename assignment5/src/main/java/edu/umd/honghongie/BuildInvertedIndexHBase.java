@@ -42,8 +42,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MapFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
-
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -65,13 +65,11 @@ import tl.lin.data.pair.PairOfWritables;
 public class BuildInvertedIndexHBase extends Configured implements Tool {
   private static final Logger LOG = Logger.getLogger(BuildInvertedIndexHBase.class);
 
-  //column family name
   public static final String[] FAMILIES = { "p" };
   public static final byte[] CF = FAMILIES[0].getBytes();
 
-  private static class MyMapper extends Mapper<LongWritable, Text, ImmutableBytesWritable, Writable> {
-
-    //use previous structure for counting
+  private static class MyMapper extends Mapper<LongWritable, Text, Text, PairOfInts> {
+    private static final Text WORD = new Text();
     private static final Object2IntFrequencyDistribution<String> COUNTS =
         new Object2IntFrequencyDistributionEntry<String>();
 
@@ -80,7 +78,6 @@ public class BuildInvertedIndexHBase extends Configured implements Tool {
         throws IOException, InterruptedException {
       String text = doc.toString();
       COUNTS.clear();
-      byte[] DOC = Bytes.toBytes(docno.get()); // get document number
 
       String[] terms = text.split("\\s+");
 
@@ -93,23 +90,33 @@ public class BuildInvertedIndexHBase extends Configured implements Tool {
         COUNTS.increment(term);
       }
 
-      // build HBase table
+      // Emit postings.
       for (PairOfObjectInt<String> e : COUNTS) {
-        String word = e.getLeftElement();
-        Put put = new Put(Bytes.toBytes(word));
-        byte[] tf = Bytes.toBytes(e.getRightElement());
-        put.addColumn(CF, DOC, tf)
+        WORD.set(e.getLeftElement());
+        context.write(WORD, new PairOfInts((int) docno.get(), e.getRightElement()));
       }
-      context.write(new ImmutableBytesWritable(Bytes.toBytes(word)), put)
     }
   }
 
+  public static class MyTableReducer extends TableReducer<Text, PairOfInts, ImmutableBytesWritable> {
+    public void reduce(Text key, Iterable<PairOfInts> values, Context context)
+        throws IOException, InterruptedException {
+          Put put = new Put(Bytes.toBytes(key.toString()));
+          for (PairOfInts val : values){
+            byte[] doc = Bytes.toBytes(val.getLeftElement());
+            byte[] tf = Bytes.toBytes(val.getRightElement());
+            put.add(CF, doc, tf);
+            context.write(null, put);
+          }
+
+
+    }
+  }
 
   private BuildInvertedIndexHBase() {}
 
   private static final String INPUT = "input";
   private static final String OUTPUT = "output";
-
 
   /**
    * Runs this tool.
@@ -123,6 +130,7 @@ public class BuildInvertedIndexHBase extends Configured implements Tool {
     options.addOption(OptionBuilder.withArgName("table").hasArg()
         .withDescription("HBase table name").create(OUTPUT));
     
+
     CommandLine cmdline;
     CommandLineParser parser = new GnuParser();
 
@@ -152,7 +160,7 @@ public class BuildInvertedIndexHBase extends Configured implements Tool {
     Configuration hbaseConfig = HBaseConfiguration.create(conf);
     HBaseAdmin admin = new HBaseAdmin(hbaseConfig);
 
-    if (admin.tableExists(outputTable)){
+    if (admin.tableExists(outputTable)) {
       LOG.info(String.format("Table '%s' exists: dropping table and recreating.", outputTable));
       LOG.info(String.format("Disabling table '%s'", outputTable));
       admin.disableTable(outputTable);
@@ -170,32 +178,24 @@ public class BuildInvertedIndexHBase extends Configured implements Tool {
 
     admin.close();
 
-
-    // ready to start running mapreduce
+    // Now we are ready to start running mapreduce
 
     LOG.info("Tool name: " + BuildInvertedIndexHBase.class.getSimpleName());
     LOG.info(" - input path: " + inputPath);
-    LOG.info(" - output table: " + outputPath);
+    LOG.info(" - output table: " + outputTable);
 
-    Job job = Job.getInstance(conf);
+    Job job = Job.getInstance(getConf());
     job.setJobName(BuildInvertedIndexHBase.class.getSimpleName());
     job.setJarByClass(BuildInvertedIndexHBase.class);
 
-    Job.setMapperClass(MyMapper.class);
+    job.setMapOutputKeyClass(Text.class);
+    job.setMapOutputValueClass(PairOfInts.class);
 
-//
-    job.setOutputKeyClass(ImmutableBytesWritable.class);
-    job.setOutputValueClass(Writable.class);
+    job.setMapperClass(MyMapper.class);
 
-//set output table
-    job.setOutputFormatClass(TableOutPutFormat.class);
-    job.getConfiguration().set(TableOutPutFormat.OUTPUT_TABLE, outputTable);
-
-
-
-//input path
     FileInputFormat.setInputPaths(job, new Path(inputPath));
-
+    TableMapReduceUtil.initTableReducerJob(outputTable, MyTableReducer.class, job);
+  
 
     long startTime = System.currentTimeMillis();
     job.waitForCompletion(true);

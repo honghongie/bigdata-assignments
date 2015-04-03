@@ -23,7 +23,10 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
+import java.util.logging.Logger;
+import java.util.NavigableMap;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -39,6 +42,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -48,6 +52,11 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.HConnection;
+import org.apache.hadoop.hbase.client.HConnectionManager;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableReducer;
@@ -57,8 +66,11 @@ import tl.lin.data.array.ArrayListWritable;
 import tl.lin.data.pair.PairOfInts;
 import tl.lin.data.pair.PairOfWritables;
 
+
 public class BooleanRetrievalHBase extends Configured implements Tool {
-  private static final Logger LOG = Logger.getLogger(BooleanRetrievalHBase.class);
+  
+  public static final String[] FAMILIES = { "p" };
+  public static final byte[] CF = FAMILIES[0].getBytes();
 
   private HTableInterface index;
   private FSDataInputStream collection;
@@ -72,7 +84,7 @@ public class BooleanRetrievalHBase extends Configured implements Tool {
     conf.addResource(new Path("/etc/hbase/conf/hbase-site.xml"));
 
     Configuration hbaseConfig = HBaseConfiguration.create(conf);
-    HConnection hbaseConnection = HConnectionanager.createConnection(hbaseConfig);
+    HConnection hbaseConnection = HConnectionManager.createConnection(hbaseConfig);
     index = hbaseConnection.getTable(tableName);
 
     collection = fs.open(new Path(collectionPath));
@@ -139,9 +151,9 @@ public class BooleanRetrievalHBase extends Configured implements Tool {
   private Set<Integer> fetchDocumentSet(String term) throws IOException {
     Set<Integer> set = new TreeSet<Integer>();
 
-    Get get = new Get(Bytes.toBytes(word));
-    Result result = table.get(get);
-    NavigableMap indexmap = result.getFamilyMap(BooleanRetrievalHBase.CF);
+    Get get = new Get(Bytes.toBytes(term));
+    Result result = index.get(get);
+    NavigableMap<byte[],byte[]> indexmap = result.getFamilyMap(BooleanRetrievalHBase.CF);
 // get out all column qualifier for a row
     for (byte[] key : indexmap.navigableKeySet()) {
       int docid = Bytes.toInt(key);
@@ -160,7 +172,7 @@ public class BooleanRetrievalHBase extends Configured implements Tool {
     return reader.readLine();
   }
 
-  private static final String INDEX = "index";
+  private static final String TABLE = "index";
   private static final String COLLECTION = "collection";
 
   /**
@@ -189,7 +201,7 @@ public class BooleanRetrievalHBase extends Configured implements Tool {
       System.out.println("args: " + Arrays.toString(args));
       HelpFormatter formatter = new HelpFormatter();
       formatter.setWidth(120);
-      formatter.printHelp(LookupPostings.class.getName(), options);
+      formatter.printHelp(this.getClass().getName(), options);
       ToolRunner.printGenericCommandUsage(System.out);
       System.exit(-1);
     }
