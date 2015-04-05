@@ -9,7 +9,7 @@ HBase doesn’t limit the number of column qualifiers so for a word which has ex
 ####
 
 ###
-2. How would you fix it? You don't need to actually implement the solution; just outline the design of both the indexer and retrieval engine that would overcome the scalability issues in the previous question.
+2.How would you fix it? You don't need to actually implement the solution; just outline the design of both the indexer and retrieval engine that would overcome the scalability issues in the previous question.
 
 ###
 
