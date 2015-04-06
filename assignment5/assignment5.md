@@ -14,6 +14,6 @@ HBase doesn’t limit the number of column qualifiers so for a word which has ex
 ###
 
 ####
-One way to fix it is to hash documents to different tables, which on one hand avoids overflow of memStore, on the other hand distributes data uniformly across cluster nodes. For example if we spit the original table to four different tables, when inserting document id and term frequency for one word, mod document id first and decide which table to insert according to mod results. After TableReducer stages we will get four index tables. In retrieval stage, document ids are fetched from four tables in a loop according to queries and then aggregated for fetching text from document collections. But it may has the problem of in consistency. Another way is to hash document ids to different column families. Indexes are saved in one table. So it is consistent however it takes more time in multiple MapReduce jobs.
+One way to fix it is to hash documents to different tables, which on one hand avoids overflow of memStore, on the other hand distributes data uniformly across cluster nodes. For example if we spit the original table to four different tables, when inserting document id and term frequency for one word, mod document id first and decide which table to insert according to mod results. After TableReducer stages we will get four index tables. In retrieval stage, document ids are fetched from four tables in a loop according to queries and then aggregated for fetching text from document collections. But it may has the problem of in consistency. 
 
 ####
