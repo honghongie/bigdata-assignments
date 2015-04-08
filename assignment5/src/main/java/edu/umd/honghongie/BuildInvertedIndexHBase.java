@@ -106,10 +106,9 @@ public class BuildInvertedIndexHBase extends Configured implements Tool {
             byte[] doc = Bytes.toBytes(val.getLeftElement());
             byte[] tf = Bytes.toBytes(val.getRightElement());
             put.add(CF, doc, tf);
-            context.write(null, put);
+            
           }
-
-
+          context.write(null, put);
     }
   }
 
